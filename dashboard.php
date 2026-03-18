@@ -1,11 +1,23 @@
 <?php
-// dashboard.php
 session_start();
 
-// Check if the user is logged in. If not, redirect to login page.
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
+}
+
+require_once 'db_connect.php';
+
+$stmt_products = $pdo->query("SELECT COUNT(*) FROM Product");
+$total_products = $stmt_products->fetchColumn();
+
+$stmt_low_stock = $pdo->query("SELECT COUNT(*) FROM Inventory WHERE QuantityInStock <= ReorderLevel");
+$low_stock_alerts = $stmt_low_stock->fetchColumn();
+
+$stmt_revenue = $pdo->query("SELECT SUM(TotalAmount) FROM SalesOrder");
+$total_revenue = $stmt_revenue->fetchColumn();
+if (!$total_revenue) {
+    $total_revenue = 0;
 }
 ?>
 
@@ -25,7 +37,10 @@ if (!isset($_SESSION['user_id'])) {
         .sidebar a:hover { background: #555; }
         .main-content { margin-left: 200px; padding: 20px; }
         .cards { display: flex; gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1; text-align: center; }
+        .card h3 { margin-top: 0; color: #555; }
+        .card p { font-size: 24px; font-weight: bold; margin: 0; color: #0056b3; }
+        .card.alert p { color: #dc3545; }
     </style>
 </head>
 <body>
@@ -41,29 +56,29 @@ if (!isset($_SESSION['user_id'])) {
 </header>
 
 <div class="sidebar">
-    <a href="dashboard.php">Dashboard</a>
-    <a href="#">Products</a>
-    <a href="#">Inventory</a>
-    <a href="#">Sales Orders</a>
-    <a href="#">Suppliers</a>
-    <a href="#">Customers</a>
+    <a href="dashboard.php" style="background: #555;">Dashboard</a>
+    <a href="products.php">Products</a>
+    <a href="inventory.php">Inventory</a>
+    <a href="sales_orders.php">Sales Orders</a>
+    <a href="suppliers.php">Suppliers</a>
+    <a href="customers.php">Customers</a>
 </div>
 
 <div class="main-content">
     <h1>Dashboard Overview</h1>
-    <p>Select an option from the sidebar to manage your system.</p>
     
     <div class="cards">
         <div class="card">
             <h3>Total Products</h3>
-            <p>0</p> </div>
-        <div class="card">
+            <p><?php echo htmlspecialchars($total_products); ?></p>
+        </div>
+        <div class="card <?php echo ($low_stock_alerts > 0) ? 'alert' : ''; ?>">
             <h3>Low Stock Alerts</h3>
-            <p>0</p>
+            <p><?php echo htmlspecialchars($low_stock_alerts); ?></p>
         </div>
         <div class="card">
-            <h3>Recent Sales</h3>
-            <p>$0.00</p>
+            <h3>Total Revenue</h3>
+            <p>$<?php echo htmlspecialchars(number_format($total_revenue, 2)); ?></p>
         </div>
     </div>
 </div>
