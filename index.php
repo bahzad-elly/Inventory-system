@@ -14,11 +14,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username_input = trim($_POST['username']);
     $password_input = $_POST['password'];
 
-    $stmt = $pdo->prepare("SELECT UserID, Username, Password, Role FROM User WHERE Username = ?");
+    $stmt = $pdo->prepare("SELECT UserID, Username, PasswordHash, Role FROM user WHERE Username = ?");
     $stmt->execute([$username_input]);
     $user = $stmt->fetch();
 
-    if ($user && password_verify($password_input, $user['Password'])) {
+    if ($user && password_verify($password_input, $user['PasswordHash'])) {
         $_SESSION['user_id'] = $user['UserID'];
         $_SESSION['username'] = $user['Username'];
         $_SESSION['role'] = $user['Role'];
@@ -31,43 +31,73 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Inventory System</title>
-    <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { text-align: center; color: #333; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #666; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        button:hover { background-color: #004494; }
-        .error { color: red; text-align: center; margin-bottom: 15px; }
-    </style>
-</head>
-<body>
+<?php
+$page_title = 'Login - Inventory System';
+$hide_sidebar = true;
+include 'includes/header.php';
+?>
 
-<div class="login-container">
-    <h2>System Login</h2>
-    <?php if ($error): ?>
-        <div class="error"><?php echo $error; ?></div>
-    <?php endif; ?>
-    <form method="POST" action="index.php">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" required autocomplete="off">
+<div style="display: flex; justify-content: center; align-items: center; min-height: 80vh; width: 100%;">
+    <div class="card" style="width: 100%; max-width: 450px; padding: 3rem;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div class="logo-icon" style="margin: 0 auto 1.5rem; width: 60px; height: 60px; font-size: 2rem;">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">
+                <span data-lang-en>Welcome Back</span>
+                <span data-lang-ckb>بەخێربێیتەوە</span>
+            </h2>
+            <p style="color: var(--text-secondary);">
+                <span data-lang-en>Please login to your account</span>
+                <span data-lang-ckb>تکایە بچۆ ناو هەژمارەکەت</span>
+            </p>
         </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
+
+        <?php if ($error): ?>
+            <div class="badge-warning" style="width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 20px; font-size: 0.9rem; text-align: center;">
+                <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST" action="index.php">
+            <div class="form-group">
+                <label for="username">
+                    <span data-lang-en>Username</span>
+                    <span data-lang-ckb>ناوی بەکارهێنەر</span>
+                </label>
+                <div style="position: relative;">
+                    <i class="fas fa-user" style="position: absolute; left: 15px; top: 15px; color: var(--accent-purple);"></i>
+                    <input type="text" id="username" name="username" required autocomplete="off" style="padding-left: 45px;">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="password">
+                    <span data-lang-en>Password</span>
+                    <span data-lang-ckb>وشەی نهێنی</span>
+                </label>
+                <div style="position: relative;">
+                    <i class="fas fa-key" style="position: absolute; left: 15px; top: 15px; color: var(--accent-purple);"></i>
+                    <input type="password" id="password" name="password" required style="padding-left: 45px;">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 15px; font-size: 1.1rem; margin-top: 1rem;">
+                <span data-lang-en>Sign In</span>
+                <span data-lang-ckb>چوونە ژوورەوە</span>
+            </button>
+        </form>
+
+        <div style="margin-top: 2rem; text-align: center; font-size: 0.85rem; color: var(--text-secondary);">
+            &copy; <?php echo date('Y'); ?> <span class="logo-text">Inventory Pro</span>
         </div>
-        <button type="submit">Log In</button>
-    </form>
+    </div>
 </div>
 
-</body>
-</html>
+<style>
+    /* Custom overrides for login page to handle icons since text-align inherit might be tricky */
+    body.ku .form-group div i { left: auto !important; right: 15px !important; }
+    body.ku .form-group input { padding-left: 18px !important; padding-right: 45px !important; }
+    body.ku .top-bar { position: absolute; top: 20px; left: 20px; right: 20px; }
+    body:not(.ku) .top-bar { position: absolute; top: 20px; left: 20px; right: 20px; }
+</style>
+
+<?php include 'includes/footer.php'; ?>

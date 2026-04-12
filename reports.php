@@ -70,89 +70,174 @@ $total_products = $total_products_stmt->fetchColumn();
 
 $low_stock_stmt = $pdo->query("SELECT COUNT(*) FROM Inventory WHERE QuantityInStock <= ReorderLevel");
 $low_stock_items = $low_stock_stmt->fetchColumn();
+
+// Fetch Recent Sales
+$recent_sales_stmt = $pdo->query("SELECT so.OrderID, so.OrderDate, so.TotalAmount, c.Name AS CustomerName FROM SalesOrder so JOIN Customer c ON so.CustomerID = c.CustomerID ORDER BY so.OrderID DESC LIMIT 10");
+$recent_sales = $recent_sales_stmt->fetchAll();
+
+// Fetch Recent Restocks
+$recent_restocks_stmt = $pdo->query("SELECT so.SupplierOrderID, so.OrderDate, so.QuantityOrdered, s.SupplierName, p.Name AS ProductName FROM SupplierOrder so JOIN Supplier s ON so.SupplierID = s.SupplierID JOIN Product p ON so.ProductID = p.ProductID ORDER BY so.SupplierOrderID DESC LIMIT 10");
+$recent_restocks = $recent_restocks_stmt->fetchAll();
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports & Backup - Inventory System</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f9; }
-        header { background-color: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        header a { color: white; text-decoration: none; background: #dc3545; padding: 8px 15px; border-radius: 4px; }
-        header a:hover { background: #c82333; }
-        .sidebar { width: 200px; background: #333; color: white; position: fixed; height: 100vh; padding-top: 20px; }
-        .sidebar a { display: block; color: white; padding: 15px; text-decoration: none; border-bottom: 1px solid #444; }
-        .sidebar a:hover { background: #555; }
-        .main-content { margin-left: 200px; padding: 20px; }
-        .card-container { display: flex; gap: 20px; margin-bottom: 30px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1; text-align: center; }
-        .card h3 { margin-top: 0; color: #333; font-size: 18px; }
-        .card .value { font-size: 32px; font-weight: bold; color: #0056b3; margin: 10px 0; }
-        .card.warning .value { color: #dc3545; }
-        .backup-container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
-        .backup-container h2 { margin-top: 0; }
-        .backup-container p { color: #666; margin-bottom: 20px; }
-        button { padding: 15px 30px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 18px; font-weight: bold; }
-        button:hover { background-color: #218838; }
-    </style>
-</head>
-<body>
+<?php
+$page_title = 'System Reports - Inventory System';
+$page_title_en = 'Reports & Backup';
+$page_title_ku = 'ڕاپۆرت و باکئەپ';
+include 'includes/header.php';
+?>
 
-<header>
-    <div>
-        <h2>Inventory System</h2>
+<div class="card">
+    <div class="card-header">
+        <h2>
+            <i class="fas fa-chart-line"></i> 
+            <span data-lang-en>Business Performance Summary</span>
+            <span data-lang-ckb>کورتەی ئەدای کار</span>
+        </h2>
     </div>
-    <div>
-        <span>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
-        <a href="logout.php">Logout</a>
-    </div>
-</header>
-
-<div class="sidebar">
-    <a href="dashboard.php">Dashboard</a>
-    <a href="products.php">Products</a>
-    <a href="inventory.php">Inventory</a>
-    <a href="sales_orders.php">Sales Orders</a>
-    <a href="suppliers.php">Suppliers</a>
-    <a href="supplier_orders.php">Restock Orders</a>
-    <a href="customers.php">Customers</a>
-    <a href="users.php">Users</a>
-    <a href="reports.php" style="background: #555;">Reports & Backup</a>
-</div>
-
-<div class="main-content">
-    <h1>System Reports</h1>
-
-    <div class="card-container">
-        <div class="card">
-            <h3>Total Sales Revenue</h3>
-            <div class="value">$<?php echo number_format($total_sales, 2); ?></div>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(139, 92, 246, 0.1); color: var(--accent-purple);">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-details">
+                <span class="stat-label" data-lang-en>Total Revenue</span>
+                <span class="stat-label" data-lang-ckb>کۆی داهات</span>
+                <h3 class="stat-value">$<?php echo number_format($total_sales, 2); ?></h3>
+            </div>
         </div>
-        <div class="card">
-            <h3>Registered Customers</h3>
-            <div class="value"><?php echo $total_customers; ?></div>
-        </div>
-        <div class="card">
-            <h3>Products in Catalog</h3>
-            <div class="value"><?php echo $total_products; ?></div>
-        </div>
-        <div class="card warning">
-            <h3>Low Stock Alerts</h3>
-            <div class="value"><?php echo $low_stock_items; ?></div>
-        </div>
-    </div>
 
-    <div class="backup-container">
-        <h2>Database Management</h2>
-        <p>Keep your data safe. Click the button below to generate and download a complete SQL backup of your entire database system, including all tables, products, sales, and user accounts.</p>
-        <form method="POST" action="reports.php">
-            <button type="submit" name="download_backup">Download Full Database Backup</button>
-        </form>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-details">
+                <span class="stat-label" data-lang-en>Total Customers</span>
+                <span class="stat-label" data-lang-ckb>کۆی کڕیاران</span>
+                <h3 class="stat-value"><?php echo $total_customers; ?></h3>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                <i class="fas fa-box"></i>
+            </div>
+            <div class="stat-details">
+                <span class="stat-label" data-lang-en>Products in Catalog</span>
+                <span class="stat-label" data-lang-ckb>کۆی کاڵاکان</span>
+                <h3 class="stat-value"><?php echo $total_products; ?></h3>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <div class="stat-details">
+                <span class="stat-label" data-lang-en>Low Stock Items</span>
+                <span class="stat-label" data-lang-ckb>کاڵا کەمبووەکان</span>
+                <h3 class="stat-value" style="color: #ef4444;"><?php echo $low_stock_items; ?></h3>
+            </div>
+        </div>
     </div>
 </div>
 
-</body>
-</html>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 2rem; margin-top: 2rem;">
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                <i class="fas fa-receipt"></i> 
+                <span data-lang-en>Recent Sales History</span>
+                <span data-lang-ckb>مێژووی فرۆشتنەکان</span>
+            </h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th><span data-lang-en>Customer</span><span data-lang-ckb>کڕیار</span></th>
+                        <th><span data-lang-en>Amount</span><span data-lang-ckb>بڕ</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recent_sales as $sale): ?>
+                    <tr>
+                        <td>#SO-<?php echo $sale['OrderID']; ?></td>
+                        <td><?php echo htmlspecialchars($sale['CustomerName']); ?></td>
+                        <td><strong style="color: var(--accent-purple);">$<?php echo number_format($sale['TotalAmount'], 2); ?></strong></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                <i class="fas fa-truck-loading"></i> 
+                <span data-lang-en>Recent Restock Logs</span>
+                <span data-lang-ckb>تۆماری کڕینەوەکان</span>
+            </h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th><span data-lang-en>Product</span><span data-lang-ckb>کاڵا</span></th>
+                        <th><span data-lang-en>Supplier</span><span data-lang-ckb>دابینکەر</span></th>
+                        <th><span data-lang-en>Qty</span><span data-lang-ckb>ژمارە</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recent_restocks as $restock): ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($restock['ProductName']); ?></td>
+                        <td><?php echo htmlspecialchars($restock['SupplierName']); ?></td>
+                        <td><span class="badge badge-success"><?php echo $restock['QuantityOrdered']; ?></span></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem; background: linear-gradient(135deg, var(--card-bg) 0%, var(--hover-bg) 100%); border: 1px solid var(--accent-purple);">
+    <div class="card-header" style="border-bottom-color: rgba(139, 92, 246, 0.1);">
+        <h2>
+            <i class="fas fa-database"></i> 
+            <span data-lang-en>Database Security</span>
+            <span data-lang-ckb>پاراستنی داتابەیس</span>
+        </h2>
+    </div>
+    <div style="padding: 2rem; text-align: center;">
+        <div style="max-width: 600px; margin: 0 auto;">
+            <i class="fas fa-shield-heart" style="font-size: 3.5rem; color: var(--accent-purple); margin-bottom: 1.5rem; display: block;"></i>
+            <h3 style="margin-bottom: 1rem;">
+                <span data-lang-en>Download Full System Backup</span>
+                <span data-lang-ckb>دابەزاندنی کۆپییەکی یەدەگ</span>
+            </h3>
+            <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 2rem;">
+                <span data-lang-en>Secure your business data by downloading a complete snapshot of your database. This includes products, sales, customers, and user credentials in a single SQL file.</span>
+                <span data-lang-ckb>داتاکانت بپارێزە بە دابەزاندنی تەواوی زانیارییەکانی سیستمەکە. ئەمە هەموو کاڵا، فرۆشتن، کڕیار و هەژمارەکان لەخۆ دەگرێت لە یەک فایلدا.</span>
+            </p>
+            <form method="POST" action="reports.php">
+                <button type="submit" name="download_backup" class="btn btn-primary" style="padding: 1rem 2.5rem; font-size: 1.1rem; border-radius: 50px; box-shadow: var(--shadow-lg);">
+                    <i class="fas fa-download"></i>
+                    <span data-lang-en>Generate Backup File</span>
+                    <span data-lang-ckb>دروستکردنی فایلی یەدەگ</span>
+                </button>
+            </form>
+            <div style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                <i class="fas fa-clock-rotate-left"></i>
+                <span data-lang-en>Last system health check: <?php echo date('Y-m-d H:i'); ?></span>
+                <span data-lang-ckb>کۆتا پشکنینی سیستم: <?php echo date('Y-m-d H:i'); ?></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php include 'includes/footer.php'; ?>

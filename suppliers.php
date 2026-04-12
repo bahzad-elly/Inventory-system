@@ -59,135 +59,146 @@ $stmt = $pdo->query("SELECT * FROM Supplier ORDER BY SupplierID DESC");
 $suppliers = $stmt->fetchAll();
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suppliers - Inventory System</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f9; }
-        header { background-color: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        header a { color: white; text-decoration: none; background: #dc3545; padding: 8px 15px; border-radius: 4px; }
-        header a:hover { background: #c82333; }
-        .sidebar { width: 200px; background: #333; color: white; position: fixed; height: 100vh; padding-top: 20px; }
-        .sidebar a { display: block; color: white; padding: 15px; text-decoration: none; border-bottom: 1px solid #444; }
-        .sidebar a:hover { background: #555; }
-        .main-content { margin-left: 200px; padding: 20px; }
-        .form-container, .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        .btn-edit { background-color: #17a2b8; padding: 5px 10px; text-decoration: none; color: white; border-radius: 4px; font-size: 14px; }
-        .btn-edit:hover { background-color: #138496; }
-        .btn-delete { background-color: #dc3545; padding: 5px 10px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .btn-delete:hover { background-color: #c82333; }
-        .btn-cancel { background-color: #6c757d; padding: 10px 15px; text-decoration: none; color: white; border-radius: 4px; margin-left: 10px; }
-        .btn-cancel:hover { background-color: #5a6268; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; }
-        .error { color: red; margin-bottom: 15px; font-weight: bold; }
-        .action-forms { display: flex; gap: 5px; align-items: center; }
-    </style>
-</head>
-<body>
+<?php
+$page_title = 'Suppliers - Inventory System';
+$page_title_en = 'Suppliers';
+$page_title_ku = 'دابینکەران';
+include 'includes/header.php';
+?>
 
-<header>
-    <div>
-        <h2>Inventory System</h2>
+<?php if ($error): ?>
+    <div class="badge-warning" style="width: 100%; padding: 15px; border-radius: 12px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-exclamation-triangle"></i> <?php echo $error; ?>
     </div>
-    <div>
-        <span>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
-        <a href="logout.php">Logout</a>
+<?php endif; ?>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            <i class="fas fa-truck-field"></i> 
+            <span data-lang-en><?php echo $edit_supplier ? 'Edit Supplier' : 'Add New Supplier'; ?></span>
+            <span data-lang-ckb><?php echo $edit_supplier ? 'دەستکاری دابینکەر' : 'زیادکردنی دابینکەر'; ?></span>
+        </h2>
     </div>
-</header>
+    <form method="POST" action="suppliers.php">
+        <?php if ($edit_supplier): ?>
+            <input type="hidden" name="supplier_id" value="<?php echo $edit_supplier['SupplierID']; ?>">
+        <?php endif; ?>
 
-<div class="sidebar">
-    <a href="dashboard.php">Dashboard</a>
-    <a href="products.php">Products</a>
-    <a href="inventory.php">Inventory</a>
-    <a href="sales_orders.php">Sales Orders</a>
-    <a href="suppliers.php" style="background: #555;">Suppliers</a>
-    <a href="supplier_orders.php">Restock Orders</a>
-    <a href="customers.php">Customers</a>
-</div>
-
-<div class="main-content">
-    <h1>Manage Suppliers</h1>
-
-    <?php if ($error): ?>
-        <div class="error"><?php echo $error; ?></div>
-    <?php endif; ?>
-
-    <div class="form-container">
-        <h3><?php echo $edit_supplier ? 'Edit Supplier' : 'Add New Supplier'; ?></h3>
-        <form method="POST" action="suppliers.php">
-            <?php if ($edit_supplier): ?>
-                <input type="hidden" name="supplier_id" value="<?php echo $edit_supplier['SupplierID']; ?>">
-            <?php endif; ?>
-            
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
             <div class="form-group">
-                <label for="supplier_name">Supplier Name</label>
+                <label for="supplier_name">
+                    <span data-lang-en>Supplier Name</span>
+                    <span data-lang-ckb>ناوی دابینکەر</span>
+                </label>
                 <input type="text" id="supplier_name" name="supplier_name" value="<?php echo $edit_supplier ? htmlspecialchars($edit_supplier['SupplierName']) : ''; ?>" required>
             </div>
             <div class="form-group">
-                <label for="phone">Phone</label>
+                <label for="phone">
+                    <span data-lang-en>Phone Number</span>
+                    <span data-lang-ckb>ژمارەی تەلەفۆن</span>
+                </label>
                 <input type="text" id="phone" name="phone" value="<?php echo $edit_supplier ? htmlspecialchars($edit_supplier['Phone']) : ''; ?>">
             </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
             <div class="form-group">
-                <label for="email">Email</label>
+                <label for="email">
+                    <span data-lang-en>Email Address</span>
+                    <span data-lang-ckb>ئیمەیڵ</span>
+                </label>
                 <input type="email" id="email" name="email" value="<?php echo $edit_supplier ? htmlspecialchars($edit_supplier['Email']) : ''; ?>">
             </div>
             <div class="form-group">
-                <label for="address">Address</label>
+                <label for="address">
+                    <span data-lang-en>Address</span>
+                    <span data-lang-ckb>ناونیشان</span>
+                </label>
                 <input type="text" id="address" name="address" value="<?php echo $edit_supplier ? htmlspecialchars($edit_supplier['Address']) : ''; ?>">
             </div>
-            
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
             <?php if ($edit_supplier): ?>
-                <button type="submit" name="update_supplier">Update Supplier</button>
-                <a href="suppliers.php" class="btn-cancel">Cancel</a>
+                <button type="submit" name="update_supplier" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    <span data-lang-en>Update Supplier</span>
+                    <span data-lang-ckb>نوێکردنەوە</span>
+                </button>
+                <a href="suppliers.php" class="btn btn-danger">
+                    <i class="fas fa-times"></i>
+                    <span data-lang-en>Cancel</span>
+                    <span data-lang-ckb>پاشگەزبوونەوە</span>
+                </a>
             <?php else: ?>
-                <button type="submit" name="add_supplier">Add Supplier</button>
+                <button type="submit" name="add_supplier" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    <span data-lang-en>Add Supplier</span>
+                    <span data-lang-ckb>زیادکردنی دابینکەر</span>
+                </button>
             <?php endif; ?>
-        </form>
-    </div>
+        </div>
+    </form>
+</div>
 
+<div class="card">
+    <div class="card-header">
+        <h2>
+            <i class="fas fa-building-user"></i> 
+            <span data-lang-en>Supplier List</span>
+            <span data-lang-ckb>لیستی دابینکەران</span>
+        </h2>
+    </div>
     <div class="table-container">
-        <h3>Supplier List</h3>
         <table>
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Email</th>
-                    <th>Address</th>
-                    <th>Actions</th>
+                    <th><span data-lang-en>Name</span><span data-lang-ckb>ناو</span></th>
+                    <th><span data-lang-en>Contact</span><span data-lang-ckb>پەیوەندی</span></th>
+                    <th><span data-lang-en>Address</span><span data-lang-ckb>ناونیشان</span></th>
+                    <th><span data-lang-en>Actions</span><span data-lang-ckb>کردارەکان</span></th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($suppliers as $supplier): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($supplier['SupplierID']); ?></td>
-                    <td><?php echo htmlspecialchars($supplier['SupplierName']); ?></td>
-                    <td><?php echo htmlspecialchars($supplier['Phone']); ?></td>
-                    <td><?php echo htmlspecialchars($supplier['Email']); ?></td>
+                    <td><span class="badge" style="background: var(--icon-bg); color: var(--accent-purple); font-family: monospace;">#S-<?php echo htmlspecialchars($supplier['SupplierID']); ?></span></td>
+                    <td style="font-weight: 500; font-size: 1.05rem;"><?php echo htmlspecialchars($supplier['SupplierName']); ?></td>
+                    <td>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <a href="tel:<?php echo htmlspecialchars($supplier['Phone']); ?>" style="text-decoration: none; color: inherit; font-size: 0.9rem;">
+                                <i class="fas fa-phone-alt" style="color: var(--accent-purple); width: 16px;"></i> <?php echo htmlspecialchars($supplier['Phone']); ?>
+                            </a>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">
+                                <i class="fas fa-envelope" style="color: var(--accent-purple); width: 16px;"></i> <?php echo htmlspecialchars($supplier['Email']); ?>
+                            </span>
+                        </div>
+                    </td>
                     <td><?php echo htmlspecialchars($supplier['Address']); ?></td>
-                    <td class="action-forms">
-                        <a href="suppliers.php?edit_id=<?php echo $supplier['SupplierID']; ?>" class="btn-edit">Edit</a>
-                        <form method="POST" action="suppliers.php" onsubmit="return confirm('Are you sure you want to delete this supplier?');" style="margin:0;">
-                            <input type="hidden" name="supplier_id" value="<?php echo $supplier['SupplierID']; ?>">
-                            <button type="submit" name="delete_supplier" class="btn-delete">Delete</button>
-                        </form>
+                    <td>
+                        <div style="display: flex; gap: 10px;">
+                            <a href="suppliers.php?edit_id=<?php echo $supplier['SupplierID']; ?>" class="btn" style="padding: 8px 12px; background: #e0f2fe; color: #0284c7;">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="suppliers.php" onsubmit="return confirm('Are you sure?');" style="margin:0;">
+                                <input type="hidden" name="supplier_id" value="<?php echo $supplier['SupplierID']; ?>">
+                                <button type="submit" name="delete_supplier" class="btn" style="padding: 8px 12px; background: #fee2e2; color: #991b1b;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($suppliers)): ?>
                 <tr>
-                    <td colspan="6" style="text-align: center;">No suppliers found.</td>
+                    <td colspan="5" style="text-align: center; padding: 4rem; color: var(--text-secondary);">
+                        <i class="fas fa-building-circle-exclamation" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>
+                        <span data-lang-en>No suppliers found.</span>
+                        <span data-lang-ckb>هیچ دابینکەرێک نەدۆزرایەوە.</span>
+                    </td>
                 </tr>
                 <?php endif; ?>
             </tbody>
@@ -195,5 +206,4 @@ $suppliers = $stmt->fetchAll();
     </div>
 </div>
 
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>

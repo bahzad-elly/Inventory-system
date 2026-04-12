@@ -57,129 +57,131 @@ $stmt = $pdo->query("SELECT * FROM Customer ORDER BY CustomerID DESC");
 $customers = $stmt->fetchAll();
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customers - Inventory System</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f9; }
-        header { background-color: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        header a { color: white; text-decoration: none; background: #dc3545; padding: 8px 15px; border-radius: 4px; }
-        header a:hover { background: #c82333; }
-        .sidebar { width: 200px; background: #333; color: white; position: fixed; height: 100vh; padding-top: 20px; }
-        .sidebar a { display: block; color: white; padding: 15px; text-decoration: none; border-bottom: 1px solid #444; }
-        .sidebar a:hover { background: #555; }
-        .main-content { margin-left: 200px; padding: 20px; }
-        .form-container, .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        .btn-edit { background-color: #17a2b8; padding: 5px 10px; text-decoration: none; color: white; border-radius: 4px; font-size: 14px; }
-        .btn-edit:hover { background-color: #138496; }
-        .btn-delete { background-color: #dc3545; padding: 5px 10px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .btn-delete:hover { background-color: #c82333; }
-        .btn-cancel { background-color: #6c757d; padding: 10px 15px; text-decoration: none; color: white; border-radius: 4px; margin-left: 10px; }
-        .btn-cancel:hover { background-color: #5a6268; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; }
-        .error { color: red; margin-bottom: 15px; font-weight: bold; }
-        .action-forms { display: flex; gap: 5px; align-items: center; }
-    </style>
-</head>
-<body>
+<?php
+$page_title = 'Customers - Inventory System';
+$page_title_en = 'Customers';
+$page_title_ku = 'کڕیاران';
+include 'includes/header.php';
+?>
 
-<header>
-    <div>
-        <h2>Inventory System</h2>
+<?php if ($error): ?>
+    <div class="badge-warning" style="width: 100%; padding: 15px; border-radius: 12px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-exclamation-triangle"></i> <?php echo $error; ?>
     </div>
-    <div>
-        <span>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
-        <a href="logout.php">Logout</a>
+<?php endif; ?>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            <i class="fas fa-user-plus"></i> 
+            <span data-lang-en><?php echo $edit_customer ? 'Edit Customer' : 'Add New Customer'; ?></span>
+            <span data-lang-ckb><?php echo $edit_customer ? 'دەستکاری کڕیار' : 'زیادکردنی کڕیار'; ?></span>
+        </h2>
     </div>
-</header>
+    <form method="POST" action="customers.php">
+        <?php if ($edit_customer): ?>
+            <input type="hidden" name="customer_id" value="<?php echo $edit_customer['CustomerID']; ?>">
+        <?php endif; ?>
 
-<div class="sidebar">
-    <a href="dashboard.php">Dashboard</a>
-    <a href="products.php">Products</a>
-    <a href="inventory.php">Inventory</a>
-    <a href="sales_orders.php">Sales Orders</a>
-    <a href="suppliers.php">Suppliers</a>
-    <a href="supplier_orders.php">Restock Orders</a>
-    <a href="customers.php" style="background: #555;">Customers</a>
-</div>
-
-<div class="main-content">
-    <h1>Manage Customers</h1>
-
-    <?php if ($error): ?>
-        <div class="error"><?php echo $error; ?></div>
-    <?php endif; ?>
-
-    <div class="form-container">
-        <h3><?php echo $edit_customer ? 'Edit Customer' : 'Add New Customer'; ?></h3>
-        <form method="POST" action="customers.php">
-            <?php if ($edit_customer): ?>
-                <input type="hidden" name="customer_id" value="<?php echo $edit_customer['CustomerID']; ?>">
-            <?php endif; ?>
-
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
             <div class="form-group">
-                <label for="name">Customer Name</label>
+                <label for="name">
+                    <span data-lang-en>Customer Name</span>
+                    <span data-lang-ckb>ناوی کڕیار</span>
+                </label>
                 <input type="text" id="name" name="name" value="<?php echo $edit_customer ? htmlspecialchars($edit_customer['Name']) : ''; ?>" required>
             </div>
             <div class="form-group">
-                <label for="phone">Phone</label>
+                <label for="phone">
+                    <span data-lang-en>Phone Number</span>
+                    <span data-lang-ckb>ژمارەی تەلەفۆن</span>
+                </label>
                 <input type="text" id="phone" name="phone" value="<?php echo $edit_customer ? htmlspecialchars($edit_customer['Phone']) : ''; ?>">
             </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="<?php echo $edit_customer ? htmlspecialchars($edit_customer['Email']) : ''; ?>">
-            </div>
-            
-            <?php if ($edit_customer): ?>
-                <button type="submit" name="update_customer">Update Customer</button>
-                <a href="customers.php" class="btn-cancel">Cancel</a>
-            <?php else: ?>
-                <button type="submit" name="add_customer">Add Customer</button>
-            <?php endif; ?>
-        </form>
-    </div>
+        </div>
 
+        <div class="form-group">
+            <label for="email">
+                <span data-lang-en>Email Address</span>
+                <span data-lang-ckb>ناونیشانی ئیمەیڵ</span>
+            </label>
+            <input type="email" id="email" name="email" value="<?php echo $edit_customer ? htmlspecialchars($edit_customer['Email']) : ''; ?>">
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <?php if ($edit_customer): ?>
+                <button type="submit" name="update_customer" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    <span data-lang-en>Update Customer</span>
+                    <span data-lang-ckb>نوێکردنەوە</span>
+                </button>
+                <a href="customers.php" class="btn btn-danger">
+                    <i class="fas fa-times"></i>
+                    <span data-lang-en>Cancel</span>
+                    <span data-lang-ckb>پاشگەزبوونەوە</span>
+                </a>
+            <?php else: ?>
+                <button type="submit" name="add_customer" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    <span data-lang-en>Add Customer</span>
+                    <span data-lang-ckb>زیادکردنی کڕیار</span>
+                </button>
+            <?php endif; ?>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            <i class="fas fa-users-viewfinder"></i> 
+            <span data-lang-en>Customer Directory</span>
+            <span data-lang-ckb>لیستی کڕیاران</span>
+        </h2>
+    </div>
     <div class="table-container">
-        <h3>Customer List</h3>
         <table>
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Email</th>
-                    <th>Actions</th>
+                    <th><span data-lang-en>Name</span><span data-lang-ckb>ناو</span></th>
+                    <th><span data-lang-en>Phone</span><span data-lang-ckb>تەلەفۆن</span></th>
+                    <th><span data-lang-en>Email</span><span data-lang-ckb>ئیمەیڵ</span></th>
+                    <th><span data-lang-en>Actions</span><span data-lang-ckb>کردارەکان</span></th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($customers as $customer): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($customer['CustomerID']); ?></td>
-                    <td><?php echo htmlspecialchars($customer['Name']); ?></td>
-                    <td><?php echo htmlspecialchars($customer['Phone']); ?></td>
+                    <td><span class="badge" style="background: var(--icon-bg); color: var(--accent-purple); font-family: monospace;">#C-<?php echo htmlspecialchars($customer['CustomerID']); ?></span></td>
+                    <td style="font-weight: 500;"><?php echo htmlspecialchars($customer['Name']); ?></td>
+                    <td><a href="tel:<?php echo htmlspecialchars($customer['Phone']); ?>" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-phone-alt" style="font-size: 0.8rem; color: var(--accent-purple);"></i>
+                        <?php echo htmlspecialchars($customer['Phone']); ?>
+                    </a></td>
                     <td><?php echo htmlspecialchars($customer['Email']); ?></td>
-                    <td class="action-forms">
-                        <a href="customers.php?edit_id=<?php echo $customer['CustomerID']; ?>" class="btn-edit">Edit</a>
-                        <form method="POST" action="customers.php" onsubmit="return confirm('Are you sure you want to delete this customer?');" style="margin:0;">
-                            <input type="hidden" name="customer_id" value="<?php echo $customer['CustomerID']; ?>">
-                            <button type="submit" name="delete_customer" class="btn-delete">Delete</button>
-                        </form>
+                    <td>
+                        <div style="display: flex; gap: 10px;">
+                            <a href="customers.php?edit_id=<?php echo $customer['CustomerID']; ?>" class="btn" style="padding: 8px 12px; background: #e0f2fe; color: #0284c7;">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="customers.php" onsubmit="return confirm('Are you sure?');" style="margin:0;">
+                                <input type="hidden" name="customer_id" value="<?php echo $customer['CustomerID']; ?>">
+                                <button type="submit" name="delete_customer" class="btn" style="padding: 8px 12px; background: #fee2e2; color: #991b1b;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($customers)): ?>
                 <tr>
-                    <td colspan="5" style="text-align: center;">No customers found.</td>
+                    <td colspan="5" style="text-align: center; padding: 4rem; color: var(--text-secondary);">
+                        <i class="fas fa-user-slash" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>
+                        <span data-lang-en>No customers found.</span>
+                        <span data-lang-ckb>هیچ کڕیارێک نەدۆزرایەوە.</span>
+                    </td>
                 </tr>
                 <?php endif; ?>
             </tbody>
@@ -187,5 +189,4 @@ $customers = $stmt->fetchAll();
     </div>
 </div>
 
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>

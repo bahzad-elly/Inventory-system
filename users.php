@@ -11,175 +11,213 @@ require_once 'db_connect.php';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['add_customer'])) {
-        $name = trim($_POST['name']);
-        $phone = trim($_POST['phone']);
+    if (isset($_POST['add_user'])) {
+        $username = trim($_POST['username']);
         $email = trim($_POST['email']);
+        $password = password_hash(trim($_POST['password']), PASSWORD_DEFAULT);
+        $role = trim($_POST['role']);
 
-        $stmt = $pdo->prepare("INSERT INTO Customer (Name, Phone, Email) VALUES (?, ?, ?)");
-        $stmt->execute([$name, $phone, $email]);
-
-        header("Location: customers.php");
-        exit;
-    } elseif (isset($_POST['update_customer'])) {
-        $id = $_POST['customer_id'];
-        $name = trim($_POST['name']);
-        $phone = trim($_POST['phone']);
-        $email = trim($_POST['email']);
-
-        $stmt = $pdo->prepare("UPDATE Customer SET Name = ?, Phone = ?, Email = ? WHERE CustomerID = ?");
-        $stmt->execute([$name, $phone, $email, $id]);
-
-        header("Location: customers.php");
-        exit;
-    } elseif (isset($_POST['delete_customer'])) {
-        $id = $_POST['customer_id'];
-        
         try {
-            $stmt = $pdo->prepare("DELETE FROM Customer WHERE CustomerID = ?");
-            $stmt->execute([$id]);
-            header("Location: customers.php");
+            $stmt = $pdo->prepare("INSERT INTO User (Username, PasswordHash, Email, Role) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$username, $password, $email, $role]);
+            header("Location: users.php");
             exit;
         } catch (PDOException $e) {
-            $error = "Cannot delete this customer because they have existing sales orders.";
+            $error = "Error adding user: " . $e->getMessage();
+        }
+    } elseif (isset($_POST['update_user'])) {
+        $id = $_POST['user_id'];
+        $username = trim($_POST['username']);
+        $email = trim($_POST['email']);
+        $role = trim($_POST['role']);
+        
+        try {
+            if (!empty($_POST['password'])) {
+                $password = password_hash(trim($_POST['password']), PASSWORD_DEFAULT);
+                $stmt = $pdo->prepare("UPDATE User SET Username = ?, PasswordHash = ?, Email = ?, Role = ? WHERE UserID = ?");
+                $stmt->execute([$username, $password, $email, $role, $id]);
+            } else {
+                $stmt = $pdo->prepare("UPDATE User SET Username = ?, Email = ?, Role = ? WHERE UserID = ?");
+                $stmt->execute([$username, $email, $role, $id]);
+            }
+            header("Location: users.php");
+            exit;
+        } catch (PDOException $e) {
+            $error = "Error updating user: " . $e->getMessage();
+        }
+    } elseif (isset($_POST['delete_user'])) {
+        $id = $_POST['user_id'];
+        
+        if ($id == $_SESSION['user_id']) {
+            $error = "You cannot delete your own account while you are logged in.";
+        } else {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM User WHERE UserID = ?");
+                $stmt->execute([$id]);
+                header("Location: users.php");
+                exit;
+            } catch (PDOException $e) {
+                $error = "Cannot delete this user because they have processed sales or restock orders.";
+            }
         }
     }
 }
 
-$edit_customer = null;
+$edit_user = null;
 if (isset($_GET['edit_id'])) {
-    $stmt = $pdo->prepare("SELECT * FROM Customer WHERE CustomerID = ?");
+    $stmt = $pdo->prepare("SELECT UserID, Username, Email, Role FROM User WHERE UserID = ?");
     $stmt->execute([$_GET['edit_id']]);
-    $edit_customer = $stmt->fetch();
+    $edit_user = $stmt->fetch();
 }
 
-$stmt = $pdo->query("SELECT * FROM Customer ORDER BY CustomerID DESC");
-$customers = $stmt->fetchAll();
+$stmt = $pdo->query("SELECT UserID, Username, Email, Role FROM User ORDER BY UserID DESC");
+$users = $stmt->fetchAll();
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customers - Inventory System</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f9; }
-        header { background-color: #0056b3; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        header a { color: white; text-decoration: none; background: #dc3545; padding: 8px 15px; border-radius: 4px; }
-        header a:hover { background: #c82333; }
-        .sidebar { width: 200px; background: #333; color: white; position: fixed; height: 100vh; padding-top: 20px; }
-        .sidebar a { display: block; color: white; padding: 15px; text-decoration: none; border-bottom: 1px solid #444; }
-        .sidebar a:hover { background: #555; }
-        .main-content { margin-left: 200px; padding: 20px; }
-        .form-container, .table-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        .btn-edit { background-color: #17a2b8; padding: 5px 10px; text-decoration: none; color: white; border-radius: 4px; font-size: 14px; }
-        .btn-edit:hover { background-color: #138496; }
-        .btn-delete { background-color: #dc3545; padding: 5px 10px; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .btn-delete:hover { background-color: #c82333; }
-        .btn-cancel { background-color: #6c757d; padding: 10px 15px; text-decoration: none; color: white; border-radius: 4px; margin-left: 10px; }
-        .btn-cancel:hover { background-color: #5a6268; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; }
-        .error { color: red; margin-bottom: 15px; font-weight: bold; }
-        .action-forms { display: flex; gap: 5px; align-items: center; }
-    </style>
-</head>
-<body>
+<?php
+$page_title = 'Users - Inventory System';
+$page_title_en = 'Users';
+$page_title_ku = 'بەکارهێنەران';
+include 'includes/header.php';
+?>
 
-<header>
-    <div>
-        <h2>Inventory System</h2>
+<?php if ($error): ?>
+    <div class="badge-warning" style="width: 100%; padding: 15px; border-radius: 12px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
+        <i class="fas fa-exclamation-triangle"></i> <?php echo $error; ?>
     </div>
-    <div>
-        <span>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
-        <a href="logout.php">Logout</a>
-    </div>
-</header>
+<?php endif; ?>
 
-<div class="sidebar">
-    <a href="dashboard.php">Dashboard</a>
-    <a href="products.php">Products</a>
-    <a href="inventory.php">Inventory</a>
-    <a href="sales_orders.php">Sales Orders</a>
-    <a href="suppliers.php">Suppliers</a>
-    <a href="supplier_orders.php">Restock Orders</a>
-    <a href="customers.php" style="background: #555;">Customers</a>
+<div class="card">
+    <div class="card-header">
+        <h2>
+            <i class="fas fa-user-gear"></i> 
+            <span data-lang-en><?php echo $edit_user ? 'Edit User' : 'Add New User'; ?></span>
+            <span data-lang-ckb><?php echo $edit_user ? 'دەستکاری بەکارهێنەر' : 'زیادکردنی بەکارهێنەر'; ?></span>
+        </h2>
+    </div>
+    <form method="POST" action="users.php">
+        <?php if ($edit_user): ?>
+            <input type="hidden" name="user_id" value="<?php echo $edit_user['UserID']; ?>">
+        <?php endif; ?>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+            <div class="form-group">
+                <label for="username">
+                    <span data-lang-en>Username</span>
+                    <span data-lang-ckb>ناوی بەکارهێنەر</span>
+                </label>
+                <input type="text" id="username" name="username" value="<?php echo $edit_user ? htmlspecialchars($edit_user['Username']) : ''; ?>" required>
+            </div>
+            <div class="form-group">
+                <label for="password">
+                    <span data-lang-en>Password</span>
+                    <span data-lang-ckb>وشەی نهێنی</span>
+                    <?php if ($edit_user): ?>
+                        <small style="display:block; color: var(--text-secondary); margin-top: 4px;">
+                            <span data-lang-en>(Leave blank to keep current)</span>
+                            <span data-lang-ckb>(بە تالێ بەجێی بهێڵە ئەگەر ناتەوێ بیگۆڕی)</span>
+                        </small>
+                    <?php endif; ?>
+                </label>
+                <input type="password" id="password" name="password" <?php echo $edit_user ? '' : 'required'; ?>>
+            </div>
+        </div>
+
+            <div class="form-group">
+                <label for="email">
+                    <span data-lang-en>Email Address</span>
+                    <span data-lang-ckb>ئیمەیڵ</span>
+                </label>
+                <input type="email" id="email" name="email" value="<?php echo $edit_user ? htmlspecialchars($edit_user['Email']) : ''; ?>" required>
+            </div>
+
+            <div class="form-group">
+                <label for="role">
+                    <span data-lang-en>Role</span>
+                    <span data-lang-ckb>پلە</span>
+                </label>
+                <select id="role" name="role" required>
+                    <option value="Admin" <?php echo ($edit_user && $edit_user['Role'] == 'Admin') ? 'selected' : ''; ?>>Admin</option>
+                    <option value="Employee" <?php echo ($edit_user && $edit_user['Role'] == 'Employee') ? 'selected' : ''; ?>>Employee</option>
+                </select>
+            </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <?php if ($edit_user): ?>
+                <button type="submit" name="update_user" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                    <span data-lang-en>Update User</span>
+                    <span data-lang-ckb>نوێکردنەوە</span>
+                </button>
+                <a href="users.php" class="btn btn-danger">
+                    <i class="fas fa-times"></i>
+                    <span data-lang-en>Cancel</span>
+                    <span data-lang-ckb>پاشگەزبوونەوە</span>
+                </a>
+            <?php else: ?>
+                <button type="submit" name="add_user" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    <span data-lang-en>Add User</span>
+                    <span data-lang-ckb>زیادکردنی بەکارهێنەر</span>
+                </button>
+            <?php endif; ?>
+        </div>
+    </form>
 </div>
 
-<div class="main-content">
-    <h1>Manage Customers</h1>
-
-    <?php if ($error): ?>
-        <div class="error"><?php echo $error; ?></div>
-    <?php endif; ?>
-
-    <div class="form-container">
-        <h3><?php echo $edit_customer ? 'Edit Customer' : 'Add New Customer'; ?></h3>
-        <form method="POST" action="customers.php">
-            <?php if ($edit_customer): ?>
-                <input type="hidden" name="customer_id" value="<?php echo $edit_customer['CustomerID']; ?>">
-            <?php endif; ?>
-
-            <div class="form-group">
-                <label for="name">Customer Name</label>
-                <input type="text" id="name" name="name" value="<?php echo $edit_customer ? htmlspecialchars($edit_customer['Name']) : ''; ?>" required>
-            </div>
-            <div class="form-group">
-                <label for="phone">Phone</label>
-                <input type="text" id="phone" name="phone" value="<?php echo $edit_customer ? htmlspecialchars($edit_customer['Phone']) : ''; ?>">
-            </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" value="<?php echo $edit_customer ? htmlspecialchars($edit_customer['Email']) : ''; ?>">
-            </div>
-            
-            <?php if ($edit_customer): ?>
-                <button type="submit" name="update_customer">Update Customer</button>
-                <a href="customers.php" class="btn-cancel">Cancel</a>
-            <?php else: ?>
-                <button type="submit" name="add_customer">Add Customer</button>
-            <?php endif; ?>
-        </form>
+<div class="card">
+    <div class="card-header">
+        <h2>
+            <i class="fas fa-users"></i> 
+            <span data-lang-en>System Users</span>
+            <span data-lang-ckb>بەکارهێنەرانی سیستم</span>
+        </h2>
     </div>
-
     <div class="table-container">
-        <h3>Customer List</h3>
         <table>
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Email</th>
-                    <th>Actions</th>
+                    <th><span data-lang-en>Username</span><span data-lang-ckb>ناوی بەکارهێنەر</span></th>
+                    <th><span data-lang-en>Email</span><span data-lang-ckb>ئیمەیڵ</span></th>
+                    <th><span data-lang-en>Role</span><span data-lang-ckb>پلە</span></th>
+                    <th><span data-lang-en>Actions</span><span data-lang-ckb>کردارەکان</span></th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($customers as $customer): ?>
+                <?php foreach ($users as $user): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($customer['CustomerID']); ?></td>
-                    <td><?php echo htmlspecialchars($customer['Name']); ?></td>
-                    <td><?php echo htmlspecialchars($customer['Phone']); ?></td>
-                    <td><?php echo htmlspecialchars($customer['Email']); ?></td>
-                    <td class="action-forms">
-                        <a href="customers.php?edit_id=<?php echo $customer['CustomerID']; ?>" class="btn-edit">Edit</a>
-                        <form method="POST" action="customers.php" onsubmit="return confirm('Are you sure you want to delete this customer?');" style="margin:0;">
-                            <input type="hidden" name="customer_id" value="<?php echo $customer['CustomerID']; ?>">
-                            <button type="submit" name="delete_customer" class="btn-delete">Delete</button>
-                        </form>
+                    <td><span class="badge" style="background: var(--icon-bg); color: var(--accent-purple); font-family: monospace;">#U-<?php echo htmlspecialchars($user['UserID']); ?></span></td>
+                    <td style="font-weight: 500;"><?php echo htmlspecialchars($user['Username']); ?></td>
+                    <td><?php echo htmlspecialchars($user['Email']); ?></td>
+                    <td>
+                        <span class="badge <?php echo $user['Role'] == 'Admin' ? 'badge-primary' : 'badge-success'; ?>" style="opacity: 0.8;">
+                            <i class="fas <?php echo $user['Role'] == 'Admin' ? 'fa-shield-halved' : 'fa-user'; ?>"></i>
+                            <?php echo htmlspecialchars($user['Role']); ?>
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 10px;">
+                            <a href="users.php?edit_id=<?php echo $user['UserID']; ?>" class="btn" style="padding: 8px 12px; background: #e0f2fe; color: #0284c7;">
+                                <i class="fas fa-user-pen"></i>
+                            </a>
+                            <form method="POST" action="users.php" onsubmit="return confirm('Are you sure?');" style="margin:0;">
+                                <input type="hidden" name="user_id" value="<?php echo $user['UserID']; ?>">
+                                <button type="submit" name="delete_user" class="btn" style="padding: 8px 12px; background: #fee2e2; color: #991b1b;">
+                                    <i class="fas fa-user-minus"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
-                <?php if (empty($customers)): ?>
+                <?php if (empty($users)): ?>
                 <tr>
-                    <td colspan="5" style="text-align: center;">No customers found.</td>
+                    <td colspan="4" style="text-align: center; padding: 4rem; color: var(--text-secondary);">
+                        <i class="fas fa-users-slash" style="font-size: 3rem; display: block; margin-bottom: 1rem;"></i>
+                        <span data-lang-en>No users found.</span>
+                        <span data-lang-ckb>هیچ بەکارهێنەرێک نەدۆزرایەوە.</span>
+                    </td>
                 </tr>
                 <?php endif; ?>
             </tbody>
@@ -187,5 +225,4 @@ $customers = $stmt->fetchAll();
     </div>
 </div>
 
-</body>
-</html>
+<?php include 'includes/footer.php'; ?>

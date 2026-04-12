@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$dbname = 'inventory_system';
+$dbname = 'InventorySystem';
 $username = 'root';
 $password = '';
 
